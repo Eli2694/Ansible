@@ -16,3 +16,4 @@ In essence, Ansible allows you to automate repetitive and complex IT operations 
 
 - [[Ansible Config File (ansible.cfg)]]
 - [[YAML File]]
+- [[Ansible Playbook]]
