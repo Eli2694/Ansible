@@ -57,13 +57,12 @@ jobs:
 
       - name: "Scan commit history (Simulates TruffleHog)"
         run: |
-          echo "### Scanning commit history for the word 'SECRET'..."
-          # This command simulates a history-aware scanner. It looks for the addition
-          # of the word "SECRET" in the history of this branch.
-          # It is expected to find the secret from the first commit and fail the job.
-          if git log -p --unified=0 origin/${{ github.base_ref }}..HEAD | grep -qE '^\+.*SECRET'; then
-            echo "❌ FAILURE: SECRET FOUND IN HISTORY! This is the correct, secure behavior."
+          echo "### Scanning final code state for the word 'SECRET'..."
+          # This scan will PASS because the secret was removed in the feature branch's
+          # final commit, so it doesn't exist in the final merged code.
+          if grep -r "SECRET" .; then
+            echo "SECRET FOUND! This job should have passed."
             exit 1
           else
-            echo "SUCCESS: No secret found in history. The test failed to find the secret."
+            echo "✅ SUCCESS: No secret found in the final code. This demonstrates the blind spot."
           fi
