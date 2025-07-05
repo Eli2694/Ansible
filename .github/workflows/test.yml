@@ -1,0 +1,69 @@
+name: Test Checkout Theory
+
+on:
+  pull_request:
+
+jobs:
+  scan-default-merge-commit:
+    name: "Job 1: Scan Default Merge Commit"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout using default behavior"
+        uses: actions/checkout@v4
+        # No 'ref' is provided, so this checks out the temporary merge commit.
+        # Default fetch-depth is 1.
+
+      - name: "Show Git History (will be a single merge commit)"
+        run: |
+          echo "### Git History for Merge Commit:"
+          git log --graph --oneline -n 10
+
+      - name: "Scan final code state (Simulates a naive scanner)"
+        run: |
+          echo "### Scanning final code state for the word 'SECRET'..."
+          # This scan will PASS because the secret was removed in the feature branch's
+          # final commit, so it doesn't exist in the final merged code.
+          if grep -r "SECRET" .; then
+            echo "SECRET FOUND! This job should have passed."
+            exit 1
+          else
+            echo "✅ SUCCESS: No secret found in the final code. This demonstrates the blind spot."
+          fi
+
+  scan-feature-branch:
+    name: "Job 2: Scan Feature Branch History"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Calculate fetch depth"
+        id: prep
+        shell: bash
+        run: |
+          # Perform the calculation in bash and set it as a step output.
+          # This is the correct way to handle arithmetic in a workflow.
+          echo "depth=$((${{ github.event.pull_request.commits }} + 2))" >> "$GITHUB_OUTPUT"
+
+      - name: "Checkout feature branch directly"
+        uses: actions/checkout@v4
+        with:
+          # Explicitly check out the PR's source branch.
+          ref: ${{ github.head_ref }}
+          # Fetches only the required number of commits by referencing the previous step's output.
+          fetch-depth: ${{ steps.prep.outputs.depth }}
+
+      - name: "Show Git History (will be a linear PR history)"
+        run: |
+          echo "### Git History for Feature Branch:"
+          git log --graph --oneline -n 10
+
+      - name: "Scan commit history (Simulates TruffleHog)"
+        run: |
+          echo "### Scanning commit history for the word 'SECRET'..."
+          # This command simulates a history-aware scanner. It looks for the addition
+          # of the word "SECRET" in the history of this branch.
+          # It is expected to find the secret from the first commit and fail the job.
+          if git log -p --unified=0 origin/${{ github.base_ref }}..HEAD | grep -qE '^\+.*SECRET'; then
+            echo "❌ FAILURE: SECRET FOUND IN HISTORY! This is the correct, secure behavior."
+            exit 1
+          else
+            echo "SUCCESS: No secret found in history. The test failed to find the secret."
+          fi
