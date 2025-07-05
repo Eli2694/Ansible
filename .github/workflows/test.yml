@@ -46,7 +46,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           # Explicitly check out the PR's source branch.
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.event.pull_request.head.ref }}
           # Fetches only the required number of commits by referencing the previous step's output.
           fetch-depth: ${{ steps.prep.outputs.depth }}
 
